@@ -1,0 +1,105 @@
+#include <U8g2lib.h>
+#include <U8x8lib.h>
+
+#include <Arduino.h>
+//Gravity Acceleration
+#include "LIS3DHTR.h"
+#ifdef SOFTWAREWIRE
+    #include <SoftwareWire.h>
+    SoftwareWire myWire(3, 2);
+    LIS3DHTR<SoftwareWire> LIS;       //Software I2C
+    #define WIRE myWire
+#else
+    #include <Wire.h>
+    LIS3DHTR<TwoWire> LIS;           //Hardware I2C
+    #define WIRE Wire
+#endif
+
+//Music Dynamic Rhythm Lamp
+#define NTD3 193
+#define NTD5 256
+
+ U8X8_SSD1306_128X64_ALT0_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);
+ 
+int tune[]=
+{
+NTD3,NTD5,NTD3,NTD5
+};
+
+float durt[]=
+{
+0.625,1,0.625,1
+};
+
+int length;
+int tonepin=5;
+int ledp=4;
+
+float x,y,z;
+void setup(void) {
+      Serial.begin(9600);
+        u8x8.begin();
+  u8x8.setFlipMode(1);
+    while (!Serial) {};
+    LIS.begin(WIRE, 0x19); //IIC init
+    delay(100);
+    LIS.setOutputDataRate(LIS3DHTR_DATARATE_50HZ);
+  // put your setup code here, to run once:
+  pinMode(tonepin,OUTPUT);
+  pinMode(ledp,OUTPUT);
+  length=sizeof(tune)/sizeof(tune[0]);
+
+}
+
+void loop(void) {
+  
+    x = LIS.getAccelerationX();
+    y = LIS.getAccelerationY();
+    z = LIS.getAccelerationZ();
+    Serial.println("x:");
+    Serial.println(x);
+    Serial.println("y:");
+    Serial.println(y);
+    Serial.println("z:");
+    Serial.println(z);
+    
+
+
+  u8x8.setFont(u8x8_font_chroma48medium8_r);
+  u8x8.setCursor(0, 0);
+  u8x8.print(x);
+  u8x8.setCursor(0, 1);
+  u8x8.print(y);
+  u8x8.setCursor(0, 2);
+  u8x8.print(z);
+        while (z > 1.2, x >0.5, y>0.5) {
+      scale();
+
+  u8x8.setCursor(0, 0);
+  u8x8.print("EARTHQUAKE");
+  u8x8.setCursor(0, 1);
+  u8x8.print("WARNING!");
+  u8x8.setCursor(0, 2);
+  u8x8.print("TAKE SHELTER");
+  delay(1000);
+  u8x8.clearDisplay();
+    x = LIS.getAccelerationX();
+    y = LIS.getAccelerationY();
+    z = LIS.getAccelerationZ();
+    }
+  // put your main code here, to run repeatedly:
+ 
+}
+void scale(){
+   for(int x=0;x<length;x++)
+  {
+    tone(tonepin,tune[x]);
+    digitalWrite(ledp, HIGH); 
+    delay(400*durt[x]);
+    digitalWrite(ledp, LOW);
+    delay(100*durt[x]);
+    noTone(tonepin);
+
+  }
+  
+}
